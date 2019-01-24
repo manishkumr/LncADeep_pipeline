@@ -1,0 +1,35 @@
+version: '2'
+services:
+   stringtie:
+      image: lncadeeppipeline
+      build:
+         context: .
+         dockerfile: Dockerfile
+      volumes:
+         - ./datasets/bam_files:/datasets
+         - ./datasets/outputs:/outputs
+         - ./scripts/stringtie.sh:/usr/local/bin/stringtie.sh
+      command: bash -c stringtie.sh
+   stringtie_merge:
+      image: lncadeeppipeline
+      volumes:
+         - ./datasets/outputs/stringtie_out:/input
+         - ./scripts/stringtie_merge.sh:/usr/local/bin/stringtie_merge.sh
+         - ./scripts/status_stringtie.sh:/usr/local/bin/status_stringtie.sh
+      depends_on:
+         - "stringtie"
+      links:
+       - "stringtie"
+      command: "bash -c status_stringtie.sh && stringtie_merge.sh"
+   gtf_to_fasta:
+    image: lncadeeppipeline
+    volumes:
+      - ./datasets/outputs/stringtie_merge_out:/input
+      - ./scripts/gtftofasta.sh:/usr/local/bin/gtftofasta.sh
+      - ./scripts/status_stringtie_merge.sh:/usr/local/bin/status_stringtie_merge.sh
+    depends_on:
+      - "stringtie_merge"
+    links:
+      - "stringtie_merge"
+    command: "bash -c status_stringtie_merge.sh && gtftofasta.sh"
+

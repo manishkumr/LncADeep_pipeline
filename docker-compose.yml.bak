@@ -1,0 +1,29 @@
+version: '2'
+services:
+   stringtie:
+      build: .
+      volumes:
+         - ./datasets/bam_files:/datasets
+         - ./datasets/outputs:/outputs
+         - ./scripts/stringtie.sh:/usr/local/bin/stringtie.sh
+      command: bash -c stringtie.sh
+   stringtie_merge:
+      build: .
+      volumes:
+         - ./datasets/outputs/stringtie_out:/input
+         - ./scripts/stringtie_merge.sh:/usr/local/bin/stringtie_merge.sh
+      depends_on:
+         - "stringtie"
+      links:
+       - "stringtie"
+    command: "while ping -c1 stringtie &>/dev/null do sleep 1; done; echo "running stringtie finished!" && stringtie_merge.sh"
+  gtf_to_fasta:
+    build: .
+    volumes:
+      - ./datasets/outputs/stringtie_merge_out:/input
+      - ./scripts/gtftofasta.sh:/usr/local/bin/gtftofasta.sh
+    depends_on:
+      - "stringtie_merge"
+    links:
+      - "stringtie_merge"
+    command: "while ping -c1 stringtie_merge &>/dev/null do sleep 1; done; echo "running stringtie merge finished!" && gtftofasta.sh"
